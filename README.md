@@ -57,7 +57,7 @@ assetPipeline/
 
 ## Usage
 
-### Method 1: Using the Shell Script (Recommended)
+### Method 1: Using the Shell Script
 ```bash
 # Make the script executable (first time only)
 chmod +x run_pipeline.sh
