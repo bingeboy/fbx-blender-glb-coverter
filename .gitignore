@@ -1,6 +1,11 @@
 # Blender Asset Pipeline .gitignore
 fxb/*
 !fxb/.gitkeep
+
+fbxAnimation/*
+!fbxAnimation/.gitkeep
+
+
 # ===========================================
 # Generated Output Files
 # ===========================================
