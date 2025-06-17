@@ -15,12 +15,12 @@ if ! command -v blender &> /dev/null; then
     echo "ln -s /Applications/Blender.app/Contents/MacOS/Blender /usr/local/bin/blender"
     echo ""
     echo "Or use the full path:"
-    echo "/Applications/Blender.app/Contents/MacOS/Blender --background --python fbx_to_glb_pipeline.py"
+    echo "/Applications/Blender.app/Contents/MacOS/Blender --background --python src/fbx_to_glb_pipeline.py"
     exit 1
 fi
 
 # Run the pipeline
-blender --background --python fbx_to_glb_pipeline.py
+blender --background --python "$(dirname "$0")/fbx_to_glb_pipeline.py"
 
 echo ""
 echo "Pipeline completed!"

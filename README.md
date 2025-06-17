@@ -1,15 +1,6 @@
 # Blender Asset Pipeline: FBX to GLB Converter
 
-A comprehensive Blender-based pipeline for converting FBX files to GLB format, optimized for Godot 4.4. This toolkit provides two conversion workflows: individual FBX conversion and animation combining for character assets.
-
-## Features
-
-- **Individual FBX Conversion**: Convert standalone FBX models to GLB format
-- **Animation Combining**: Merge multiple FBX animation files with a base character model into a single GLB
-- **Godot 4.4 Optimization**: Export settings optimized for Godot 4.4 compatibility
-- **Batch Processing**: Automated pipeline for processing multiple assets
-- **Armature Preservation**: Maintains proper bone structure and skinning data
-- **Texture & Material Support**: Preserves all visual assets and PBR materials
+A streamlined asset pipeline for converting FBX models with textures to GLB format, optimized for Godot 4.4. Features a dynamic CLI that automatically discovers and processes all FBX assets without hardcoded filenames.
 
 ## Overview
 
@@ -47,111 +38,99 @@ sudo pacman -S blender     # Arch
 ## Project Structure
 
 ```
-fbx-blender-glb-converter/
-├── fbx/                        # Input folder for individual FBX models
-│   ├── model_name_1/           # Each model gets its own folder
-│   │   ├── model.fbx           # FBX file
-│   │   ├── texture.png         # Texture files
-│   │   └── normal.png          # Additional textures
-│   └── model_name_2/
-│       ├── character.fbx
-│       └── skin.jpg
-├── fbxAnimation/               # Input folder for character animations
-│   ├── Ch20_nonPBR.fbx        # Base character model (T-pose)
-│   ├── Running.fbx            # Animation files
-│   ├── Left Strafe.fbx
-│   └── Right Strafe.fbx
-├── glb/                        # Output folder (auto-created)
-│   ├── model_name_1.glb        # Individual converted GLB files
-│   ├── model_name_2.glb
-│   └── Ch20_with_animations.glb # Combined character with animations
-├── fbx_to_glb_pipeline.py      # Individual FBX conversion script
-├── fbx_animation_combiner.py   # Animation combining script
-├── run_pipeline.sh             # Execution wrapper
-└── README.md                   # This file
+assetPipeline/
+├── fbx/                     # Input folder for FBX models
+│   ├── character_model/     # Each model gets its own folder
+│   │   ├── model.fbx        # FBX file
+│   │   ├── texture.png      # Texture files
+│   │   └── normal.png       # Additional textures
+│   └── weapon_sword/
+│       ├── weapon.fbx
+│       └── metal_texture.jpg
+├── glb/                     # Output folder (auto-created)
+│   ├── character_model.glb  # Converted GLB files
+│   └── weapon_sword.glb
+├── src/                     # Source scripts directory
+│   ├── asset_pipeline_cli.py    # Dynamic CLI tool
+│   ├── fbx_to_glb_pipeline.py   # Main conversion script
+│   └── run_pipeline.sh          # Shell wrapper
+└── README.md                # This file
 ```
 
 ## Usage
 
-### Individual FBX Conversion
+### Method 1: Using the Dynamic CLI (Recommended)
 
-For converting standalone FBX models with textures:
+The CLI automatically discovers all FBX folders and provides flexible conversion options:
 
-#### Method 1: Using the Shell Script
+```bash
+# List all available assets
+python src/asset_pipeline_cli.py --list
+
+# Convert all assets
+python src/asset_pipeline_cli.py --convert
+
+# Convert specific assets
+python src/asset_pipeline_cli.py --convert character_model weapon_sword
+
+# Convert with verbose output
+python src/asset_pipeline_cli.py --convert --verbose
+
+# Show help
+python src/asset_pipeline_cli.py --help
+```
+
+### Method 2: Using the Shell Script
 ```bash
 # Make the script executable (first time only)
-chmod +x run_pipeline.sh
+chmod +x src/run_pipeline.sh
 
-# Run the pipeline
-./run_pipeline.sh
+# Run the pipeline (converts all assets)
+./src/run_pipeline.sh
 ```
 
-#### Method 2: Direct Blender Command
+### Method 3: Direct Blender Command
 ```bash
-blender --background --python fbx_to_glb_pipeline.py
+blender --background --python src/fbx_to_glb_pipeline.py
 ```
 
-#### Method 3: Using Full Blender Path (if not in PATH)
+### Method 4: Using Full Blender Path (if not in PATH)
 ```bash
 # macOS
-/Applications/Blender.app/Contents/MacOS/Blender --background --python fbx_to_glb_pipeline.py
+/Applications/Blender.app/Contents/MacOS/Blender --background --python src/fbx_to_glb_pipeline.py
 
 # Windows
-"C:\Program Files\Blender Foundation\Blender 4.4\blender.exe" --background --python fbx_to_glb_pipeline.py
+"C:\Program Files\Blender Foundation\Blender 4.4\blender.exe" --background --python src/fbx_to_glb_pipeline.py
 ```
-
-### Animation Combining
-
-For combining a character model with multiple animation files:
-
-1. **Prepare your files** in the `fbxAnimation/` directory:
-   - Place your base character model (T-pose) as `Ch20_nonPBR.fbx`
-   - Add animation files: `Running.fbx`, `Left Strafe.fbx`, `Right Strafe.fbx`, etc.
-
-2. **Run the animation combiner**:
-   ```bash
-   blender --background --python fbx_animation_combiner.py
-   ```
-
-3. **Output**: Creates `glb/Ch20_with_animations.glb` with all animations combined
-
-#### Animation Requirements
-- FBX format files
-- 30fps animations (or any consistent framerate)
-- Skinned meshes with armature
-- All animation files should use the same bone structure as the base character
 
 ## How It Works
 
-### Individual Conversion Pipeline
-1. **Scans** the `fbx/` directory for model folders
+1. **Discovers** all folders in the `fbx/` directory dynamically
 2. **Imports** each FBX file found in the folders
 3. **Preserves** all textures and materials
 4. **Exports** as GLB with Godot 4.4 optimized settings
 5. **Saves** converted files to the `glb/` folder
 
-### Animation Combining Pipeline
-1. **Imports** the base character model (T-pose) from `fbxAnimation/`
-2. **Identifies** the armature and bone structure
-3. **Processes** each animation FBX file sequentially
-4. **Extracts** animation data and merges with base character
-5. **Exports** a single GLB with all animations as separate action clips
-6. **Optimizes** for Godot 4.4 AnimationPlayer compatibility
+## CLI Features
+
+- **Dynamic Discovery**: Automatically finds all FBX folders without hardcoded names
+- **Selective Processing**: Convert specific assets or all at once
+- **Status Reporting**: Shows which assets have been converted
+- **Verbose Logging**: Detailed output for debugging
+- **Blender Validation**: Checks if Blender is properly installed
 
 ## Supported Features
 
 - ✅ FBX model import with textures
-- ✅ Material preservation and PBR compatibility
+- ✅ Material preservation
 - ✅ Texture coordinate mapping
 - ✅ Normal maps and surface data
-- ✅ Individual FBX to GLB conversion
-- ✅ **Multi-animation combining** (NEW)
-- ✅ Armature and bone structure preservation
-- ✅ Animation action separation for Godot
+- ✅ Animation sequences (walk, run, idle, etc.)
+- ✅ Skeletal animations and armatures
+- ✅ Multiple animation clips in single FBX
 - ✅ Batch processing of multiple models
 - ✅ Godot 4.4 compatibility
 - ✅ Automatic Y-up coordinate conversion
-- ✅ Optimized joint influences (max 4 per vertex)
 
 ## GLB Export Settings
 
@@ -161,10 +140,7 @@ The pipeline uses these optimized settings for Godot 4.4:
 - **Textures**: Preserved with automatic format detection
 - **Materials**: Full export with PBR compatibility
 - **Coordinates**: Y-up (Godot standard)
-- **Animations**: Multiple actions exported as separate clips
-- **NLA Strips**: Enabled for proper animation separation
-- **Joint Influences**: Limited to 4 per vertex (Godot standard)
-- **Animation Optimization**: Size-optimized keyframes
+- **Animations**: Included if present
 - **Compression**: Disabled for maximum compatibility
 
 ## Troubleshooting
@@ -184,96 +160,125 @@ The pipeline uses these optimized settings for Godot 4.4:
 - Ensure all referenced textures are in the same folder
 - Try opening the FBX in Blender manually to verify it's valid
 
-**"No armature found in base character"** (Animation Combining)
-- Ensure your base character FBX contains a proper armature/skeleton
-- Verify the character is rigged and skinned correctly
-- Check that the base file is named `Ch20_nonPBR.fbx` (or update the script)
-
-**"Animation actions not showing in Godot"**
-- Verify animations were properly combined by checking the GLB file size
-- In Godot, check the AnimationPlayer node for available animation clips
-- Ensure all animation FBX files have compatible bone structures
-
 **"Permission denied"**
 - Make sure the script has execute permissions: `chmod +x run_pipeline.sh`
 - Check that you have write permissions in the project directory
 
 ### Debugging
 
-For more detailed output, run Blender with verbose logging:
+For more detailed output, use the CLI verbose mode:
 ```bash
-blender --background --python fbx_to_glb_pipeline.py --debug
+python src/asset_pipeline_cli.py --convert --verbose
 ```
 
-## Adding New Assets
-
-### Adding Individual Models
+## Adding New Models
 
 1. Create a new folder in `fbx/` with your model name
 2. Place the FBX file and all textures in that folder
-3. Run the individual conversion pipeline
-4. Check `glb/` for the converted file
+3. Run the CLI to see your new asset
+4. Convert it using the CLI
 
 Example:
 ```bash
-mkdir fbx/my_character
-cp path/to/character.fbx fbx/my_character/
-cp path/to/texture.png fbx/my_character/
-./run_pipeline.sh
+mkdir fbx/space_ship
+cp path/to/ship.fbx fbx/space_ship/
+cp path/to/hull_texture.png fbx/space_ship/
+
+# List to see your new asset
+python src/asset_pipeline_cli.py --list
+
+# Convert just this asset
+python src/asset_pipeline_cli.py --convert space_ship
 ```
 
-### Adding Character Animations
+## Working with Animated FBX Files
 
-1. Place your base character (T-pose) in `fbxAnimation/` as `Ch20_nonPBR.fbx`
-2. Add animation files to the same directory: `Running.fbx`, `Walking.fbx`, etc.
-3. Run the animation combiner
-4. Check `glb/` for `Ch20_with_animations.glb`
+The pipeline fully supports FBX files with animations, including multiple animation sequences and complex skeletal rigs.
 
-Example:
+### Animated Model Structure
+
+```
+fbx/
+└── animated_character/
+    ├── character.fbx           # FBX with multiple animations
+    ├── diffuse_texture.png     # Character textures
+    ├── normal_map.png
+    └── specular_map.png
+```
+
+### Animation Support
+
+The tool preserves all animations from your FBX file:
+- **Multiple Animation Clips**: Walk, run, idle, attack, etc.
+- **Skeletal Animations**: Full bone hierarchy and weights
+- **Keyframe Data**: All animation timing and curves
+- **Animation Names**: Preserves original clip names from FBX
+
+### Converting Animated Models
+
 ```bash
-cp path/to/base_character.fbx fbxAnimation/Ch20_nonPBR.fbx
-cp path/to/run_anim.fbx fbxAnimation/Running.fbx
-cp path/to/walk_anim.fbx fbxAnimation/Walking.fbx
-blender --background --python fbx_animation_combiner.py
+# Check your animated asset
+python src/asset_pipeline_cli.py --list
+# Output shows:
+#   1. animated_character
+#      FBX files: 1
+#      Textures: 3
+#      Status: ✗ No GLB
+
+# Convert the animated character
+python src/asset_pipeline_cli.py --convert animated_character
+
+# For detailed animation processing info
+python src/asset_pipeline_cli.py --convert animated_character --verbose
 ```
+
+### Common Animated FBX Workflows
+
+**Character with Multiple Animations:**
+```bash
+mkdir fbx/hero_character
+# Copy FBX containing: idle, walk, run, jump, attack animations
+cp path/to/hero_with_anims.fbx fbx/hero_character/
+cp path/to/character_textures/*.png fbx/hero_character/
+
+python src/asset_pipeline_cli.py --convert hero_character
+```
+
+**Batch Converting Multiple Animated Characters:**
+```bash
+# Convert all animated characters at once
+python src/asset_pipeline_cli.py --convert hero_character enemy_orc companion_mage
+
+# Or convert everything
+python src/asset_pipeline_cli.py --convert
+```
+
+### Animation Optimization Tips
+
+- **FBX Preparation**: Ensure animations are properly named in your 3D software
+- **Frame Rate**: Use consistent frame rates (30fps recommended for games)
+- **Animation Length**: Keep clips concise to reduce file size
+- **Bone Count**: Minimize bone count while maintaining quality
+- **Keyframe Reduction**: Clean up unnecessary keyframes before export
 
 ## Godot 4.4 Integration
 
 The generated GLB files are ready to use in Godot 4.4:
 
-### Individual Models
 1. Copy GLB files to your Godot project's asset folder
 2. Godot will automatically import them
 3. Materials and textures should be preserved
-4. No additional configuration needed
+4. **Animations are automatically available** in the AnimationPlayer node
+5. No additional configuration needed
 
-### Animated Characters
-1. Import the combined GLB file into your Godot project
-2. Add an AnimationPlayer node to your character scene
-3. The AnimationPlayer will automatically detect all animation clips:
-   - `Running`
-   - `Left Strafe`
-   - `Right Strafe`
-   - (Plus any other animations you included)
-4. Play animations using: `$AnimationPlayer.play("Running")`
+### Using Animations in Godot
 
-### Animation Example in Godot
-```gdscript
-# In your character script
-extends CharacterBody3D
-
-@onready var animation_player = $AnimationPlayer
-
-func _ready():
-    # Play the running animation on start
-    animation_player.play("Running")
-
-func _input(event):
-    if event.is_action_pressed("ui_right"):
-        animation_player.play("Right Strafe")
-    elif event.is_action_pressed("ui_left"):
-        animation_player.play("Left Strafe")
-```
+For animated GLB files:
+- Drag the GLB into your scene
+- The model will have an **AnimationPlayer** node attached
+- All animation clips from the FBX will be available in the AnimationPlayer
+- Animation names match those from your original FBX file
+- Use `animation_player.play("walk")` to play specific animations
 
 ## Performance Tips
 
