@@ -141,7 +141,7 @@ if __name__ == "__main__":
         
         temp_script = self.project_root / "temp_pipeline.py"
         try:
-            with open(temp_script, 'w') as f:
+            with open(temp_script, 'w', encoding='utf-8') as f:
                 f.write(temp_script_content)
             
             # Run Blender with the temporary script
