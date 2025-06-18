@@ -38,7 +38,7 @@ sudo pacman -S blender     # Arch
 ## Project Structure
 
 ```
-assetPipeline/
+root/
 ├── fbx/                     # Input folder for FBX models
 │   ├── character_model/     # Each model gets its own folder
 │   │   ├── model.fbx        # FBX file
