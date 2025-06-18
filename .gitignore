@@ -2,19 +2,6 @@
 fxb/*
 !fxb/.gitkeep
 
-fbxAnimation/*
-!fbxAnimation/.gitkeep
-
-# temp dir used for testing locally
-temp/
-
-# ===========================================
-# Generated Output Files
-# ===========================================
-# GLB output files (these are generated, not source)
-glb/
-*.glb
-
 # ===========================================
 # Blender Files
 # ===========================================
