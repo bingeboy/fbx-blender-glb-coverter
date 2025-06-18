@@ -5,6 +5,8 @@ fxb/*
 fbxAnimation/*
 !fbxAnimation/.gitkeep
 
+# temp dir used for testing locally
+temp/
 
 # ===========================================
 # Generated Output Files
