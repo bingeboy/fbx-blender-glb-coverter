@@ -15,17 +15,66 @@ def clear_scene():
     bpy.ops.object.delete(use_global=False)
 
 def import_fbx(fbx_path):
-    """Import FBX file into Blender"""
+    """Import FBX file into Blender with animation support"""
     try:
-        bpy.ops.import_scene.fbx(filepath=str(fbx_path))
+        bpy.ops.import_scene.fbx(
+            filepath=str(fbx_path),
+            use_anim=True,  # Import animations
+            anim_offset=1.0,  # Animation offset
+            use_subsurf=False,  # Don't add subdivision surface
+            use_custom_normals=True,  # Use custom normals
+            use_image_search=True,  # Search for images in subdirectories
+            use_alpha_decals=False,  # Handle alpha decals
+            decal_offset=0.0,  # Decal offset
+            use_prepost_rot=True,  # Use pre/post rotation
+            axis_forward='-Z',  # Forward axis
+            axis_up='Y',  # Up axis
+            global_scale=1.0,  # Global scale
+            bake_space_transform=False,  # Don't bake space transform
+            force_connect_children=False,  # Don't force connect children
+            automatic_bone_orientation=False,  # Don't automatically orient bones
+            primary_bone_axis='Y',  # Primary bone axis
+            secondary_bone_axis='X'  # Secondary bone axis
+        )
         print(f"Successfully imported: {fbx_path}")
         return True
     except Exception as e:
         print(f"Error importing FBX {fbx_path}: {e}")
         return False
 
+def debug_animations():
+    """Debug and report animation information in the current scene"""
+    print("\n=== Animation Debug Info ===")
+    
+    # Check actions
+    if bpy.data.actions:
+        print(f"Found {len(bpy.data.actions)} action(s):")
+        for i, action in enumerate(bpy.data.actions):
+            print(f"  {i+1}. '{action.name}' - {len(action.fcurves)} fcurves, frames {action.frame_range[0]}-{action.frame_range[1]}")
+    else:
+        print("No actions found")
+    
+    # Check armatures
+    armatures = [obj for obj in bpy.context.scene.objects if obj.type == 'ARMATURE']
+    if armatures:
+        print(f"Found {len(armatures)} armature(s):")
+        for armature in armatures:
+            has_anim = armature.animation_data is not None
+            current_action = armature.animation_data.action.name if has_anim and armature.animation_data.action else "None"
+            print(f"  - '{armature.name}': animation_data={has_anim}, action={current_action}")
+    else:
+        print("No armatures found")
+    
+    # Total keyframes
+    total_keyframes = sum(len(fcurve.keyframe_points) for action in bpy.data.actions for fcurve in action.fcurves)
+    print(f"Total keyframes: {total_keyframes}")
+    print("=== End Animation Debug ===\n")
+
 def export_glb(output_path):
-    """Export scene as GLB with Godot 4.4 optimized settings"""
+    """Export scene as GLB with enhanced animation support for Godot 4.4"""
+    # Debug animations before export
+    debug_animations()
+    
     try:
         bpy.ops.export_scene.gltf(
             filepath=str(output_path),
@@ -37,6 +86,14 @@ def export_glb(output_path):
             export_yup=True,
             export_apply=True,
             export_animations=True,
+            export_frame_range=False,  # Export all animation frames
+            export_force_sampling=False,  # Use original keyframes
+            export_nla_strips=True,  # Export NLA strips as separate animations
+            export_def_bones=False,  # Don't export deformation bones only
+            export_current_frame=False,  # Don't limit to current frame
+            export_skins=True,  # Export armature deformation
+            export_all_influences=False,  # Limit vertex influences for performance
+            export_morph=True,  # Export shape keys/morph targets
             export_image_format='AUTO'
         )
         print(f"Successfully exported GLB: {output_path}")
