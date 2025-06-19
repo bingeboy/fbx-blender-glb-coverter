@@ -47,13 +47,20 @@ root/
 │   └── weapon_sword/
 │       ├── weapon.fbx
 │       └── metal_texture.jpg
+├── fbxAnimation/            # Input folder for FBX animation combining
+│   ├── Ch20_nonPBR.fbx      # Base character (T-pose)
+│   ├── Walking.fbx          # Individual animation files
+│   ├── Running.fbx
+│   └── Idle.fbx
 ├── glb/                     # Output folder (auto-created)
 │   ├── character_model.glb  # Converted GLB files
-│   └── weapon_sword.glb
+│   ├── weapon_sword.glb
+│   └── Ch20_nonPBR_with_animations.glb  # Combined animation GLB
 ├── src/                     # Source scripts directory
-│   ├── asset_pipeline_cli.py    # Dynamic CLI tool
-│   ├── fbx_to_glb_pipeline.py   # Main conversion script
-│   └── run_pipeline.sh          # Shell wrapper
+│   ├── asset_pipeline_cli.py        # Dynamic CLI tool
+│   ├── fbx_to_glb_pipeline.py       # Main conversion script
+│   ├── fbx_animation_combiner.py    # Animation combining script
+│   └── run_pipeline.sh              # Shell wrapper
 └── README.md                # This file
 ```
 
@@ -75,6 +82,12 @@ python src/asset_pipeline_cli.py --convert character_model weapon_sword
 
 # Convert with verbose output
 python src/asset_pipeline_cli.py --convert --verbose
+
+# Combine FBX animations (from fbxAnimation folder)
+python src/asset_pipeline_cli.py --combine-animations
+
+# Combine animations with custom base character
+python src/asset_pipeline_cli.py --combine-animations --base-character MyChar.fbx --verbose
 
 # Show help
 python src/asset_pipeline_cli.py --help
@@ -193,9 +206,11 @@ python src/asset_pipeline_cli.py --convert space_ship
 
 ## Working with Animated FBX Files
 
-The pipeline fully supports FBX files with animations, including multiple animation sequences and complex skeletal rigs.
+The pipeline supports two animation workflows:
 
-### Animated Model Structure
+### Option 1: Single FBX with Multiple Animations (Standard)
+
+For FBX files that already contain multiple animation clips:
 
 ```
 fbx/
@@ -206,25 +221,8 @@ fbx/
     └── specular_map.png
 ```
 
-### Animation Support
-
-The tool preserves all animations from your FBX file:
-- **Multiple Animation Clips**: Walk, run, idle, attack, etc.
-- **Skeletal Animations**: Full bone hierarchy and weights
-- **Keyframe Data**: All animation timing and curves
-- **Animation Names**: Preserves original clip names from FBX
-
-### Converting Animated Models
-
+**Converting Single FBX with Animations:**
 ```bash
-# Check your animated asset
-python src/asset_pipeline_cli.py --list
-# Output shows:
-#   1. animated_character
-#      FBX files: 1
-#      Textures: 3
-#      Status: ✗ No GLB
-
 # Convert the animated character
 python src/asset_pipeline_cli.py --convert animated_character
 
@@ -232,9 +230,45 @@ python src/asset_pipeline_cli.py --convert animated_character
 python src/asset_pipeline_cli.py --convert animated_character --verbose
 ```
 
-### Common Animated FBX Workflows
+### Option 2: Combining Separate Animation Files (NEW)
 
-**Character with Multiple Animations:**
+For workflows where you have a base character and separate animation FBX files:
+
+```
+fbxAnimation/
+├── Ch20_nonPBR.fbx      # Base character (T-pose)
+├── Walking.fbx          # Individual animation files
+├── Running.fbx
+├── Idle.fbx
+├── Jumping.fbx
+└── Attack.fbx
+```
+
+**Combining Separate Animation Files:**
+```bash
+# Combine all animations with default base character (Ch20_nonPBR.fbx)
+python src/asset_pipeline_cli.py --combine-animations
+
+# Use a custom base character
+python src/asset_pipeline_cli.py --combine-animations --base-character MyChar.fbx
+
+# With verbose output for debugging
+python src/asset_pipeline_cli.py --combine-animations --base-character MyChar.fbx --verbose
+```
+
+This creates a single GLB file (e.g., `Ch20_nonPBR_with_animations.glb`) containing the base character with all animations combined.
+
+### Animation Support
+
+Both workflows preserve:
+- **Multiple Animation Clips**: Walk, run, idle, attack, etc.
+- **Skeletal Animations**: Full bone hierarchy and weights
+- **Keyframe Data**: All animation timing and curves
+- **Animation Names**: Preserves original clip names from FBX
+
+### Common Animation Workflows
+
+**Standard Single FBX Workflow:**
 ```bash
 mkdir fbx/hero_character
 # Copy FBX containing: idle, walk, run, jump, attack animations
@@ -244,13 +278,19 @@ cp path/to/character_textures/*.png fbx/hero_character/
 python src/asset_pipeline_cli.py --convert hero_character
 ```
 
-**Batch Converting Multiple Animated Characters:**
+**Separate Files Workflow:**
 ```bash
-# Convert all animated characters at once
-python src/asset_pipeline_cli.py --convert hero_character enemy_orc companion_mage
+# Create fbxAnimation directory if it doesn't exist
+mkdir fbxAnimation
 
-# Or convert everything
-python src/asset_pipeline_cli.py --convert
+# Copy base character (T-pose) and individual animation files
+cp path/to/character_tpose.fbx fbxAnimation/BaseCharacter.fbx
+cp path/to/walk_anim.fbx fbxAnimation/
+cp path/to/run_anim.fbx fbxAnimation/
+cp path/to/idle_anim.fbx fbxAnimation/
+
+# Combine them into a single GLB
+python src/asset_pipeline_cli.py --combine-animations --base-character BaseCharacter.fbx
 ```
 
 ### Animation Optimization Tips
@@ -260,6 +300,7 @@ python src/asset_pipeline_cli.py --convert
 - **Animation Length**: Keep clips concise to reduce file size
 - **Bone Count**: Minimize bone count while maintaining quality
 - **Keyframe Reduction**: Clean up unnecessary keyframes before export
+- **Bone Hierarchy**: Ensure all animation files use the same bone structure as the base character
 
 ## Godot 4.4 Integration
 
