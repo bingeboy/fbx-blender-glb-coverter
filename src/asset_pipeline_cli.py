@@ -16,8 +16,10 @@ class AssetPipelineCLI:
         self.script_dir = Path(__file__).parent
         self.project_root = self.script_dir.parent
         self.fbx_dir = self.project_root / "fbx"
+        self.fbx_anim_dir = self.project_root / "fbxAnimation"
         self.glb_dir = self.project_root / "glb"
         self.pipeline_script = self.script_dir / "fbx_to_glb_pipeline.py"
+        self.animation_combiner_script = self.script_dir / "fbx_animation_combiner.py"
     
     def discover_fbx_folders(self) -> List[Path]:
         """Dynamically discover all folders in the fbx directory"""
@@ -163,6 +165,103 @@ if __name__ == "__main__":
             # Clean up temporary script
             if temp_script.exists():
                 temp_script.unlink()
+    
+    def combine_animations(self, base_character: str = "Ch20_nonPBR.fbx", verbose: bool = False) -> None:
+        """Combine FBX animations into a single GLB file"""
+        if not self.check_blender():
+            print("Error: Blender not found in PATH")
+            print("Please install Blender or add it to your PATH")
+            print("\nOn macOS, you might need to create a symlink:")
+            print("ln -s /Applications/Blender.app/Contents/MacOS/Blender /usr/local/bin/blender")
+            return
+        
+        if not self.animation_combiner_script.exists():
+            print(f"Error: Animation combiner script not found: {self.animation_combiner_script}")
+            return
+        
+        if not self.fbx_anim_dir.exists():
+            print(f"Error: FBX Animation directory not found: {self.fbx_anim_dir}")
+            print(f"Please create the directory: {self.fbx_anim_dir}")
+            print("And place your base character and animation FBX files there.")
+            return
+        
+        # Ensure GLB directory exists
+        self.glb_dir.mkdir(exist_ok=True)
+        
+        # Check if base character exists
+        base_fbx = self.fbx_anim_dir / base_character
+        if not base_fbx.exists():
+            print(f"Error: Base character file not found: {base_fbx}")
+            print(f"Available FBX files in {self.fbx_anim_dir}:")
+            fbx_files = list(self.fbx_anim_dir.glob("*.fbx"))
+            if fbx_files:
+                for fbx_file in fbx_files:
+                    print(f"  - {fbx_file.name}")
+                print(f"\nTry specifying one of these as the base character:")
+                print(f"python asset_pipeline_cli.py --combine-animations --base-character FILENAME.fbx")
+            else:
+                print("  No FBX files found!")
+            return
+        
+        # Count animation files
+        animation_files = [f for f in self.fbx_anim_dir.glob("*.fbx") if f.name != base_character]
+        if not animation_files:
+            print(f"No animation files found (excluding base character {base_character})")
+            return
+        
+        print(f"Combining animations from {len(animation_files)} files with base character {base_character}")
+        if verbose:
+            print("Animation files:")
+            for anim_file in animation_files:
+                print(f"  - {anim_file.name}")
+        
+        # Create a temporary script that processes the animation combination
+        temp_script_content = f'''#!/usr/bin/env python3
+import sys
+sys.path.append(r"{self.script_dir}")
+from fbx_animation_combiner import process_fbx_animation_folder
+from pathlib import Path
+
+def main():
+    fbx_anim_dir = Path(r"{self.fbx_anim_dir}")
+    glb_dir = Path(r"{self.glb_dir}")
+    base_character = r"{base_character}"
+    
+    success = process_fbx_animation_folder(fbx_anim_dir, glb_dir, base_character)
+    if not success:
+        exit(1)
+
+if __name__ == "__main__":
+    main()
+'''
+        
+        temp_script = self.project_root / "temp_animation_combiner.py"
+        try:
+            with open(temp_script, 'w', encoding='utf-8') as f:
+                f.write(temp_script_content)
+            
+            # Run Blender with the temporary script
+            cmd = ["blender", "--background", "--python", str(temp_script)]
+            
+            if verbose:
+                print(f"Running command: {' '.join(cmd)}")
+                result = subprocess.run(cmd)
+            else:
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr and result.returncode != 0:
+                    print("Errors:", result.stderr)
+            
+            if result.returncode == 0:
+                print("\nAnimation combination completed successfully!")
+            else:
+                print("\nAnimation combination failed!")
+        
+        finally:
+            # Clean up temporary script
+            if temp_script.exists():
+                temp_script.unlink()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -170,10 +269,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python asset_pipeline_cli.py --list                    # List all available assets
-  python asset_pipeline_cli.py --convert                 # Convert all assets
-  python asset_pipeline_cli.py --convert male_casual     # Convert specific asset
+  python asset_pipeline_cli.py --list                              # List all available assets
+  python asset_pipeline_cli.py --convert                           # Convert all assets
+  python asset_pipeline_cli.py --convert male_casual               # Convert specific asset
   python asset_pipeline_cli.py --convert male_casual female_casual --verbose
+  python asset_pipeline_cli.py --combine-animations                # Combine animations (default base: Ch20_nonPBR.fbx)
+  python asset_pipeline_cli.py --combine-animations --base-character MyChar.fbx --verbose
         """
     )
     
@@ -196,6 +297,18 @@ Examples:
         help="Enable verbose output"
     )
     
+    parser.add_argument(
+        "--combine-animations",
+        action="store_true",
+        help="Combine FBX animations from fbxAnimation directory into a single GLB"
+    )
+    
+    parser.add_argument(
+        "--base-character",
+        default="Ch20_nonPBR.fbx",
+        help="Base character FBX file for animation combining (default: Ch20_nonPBR.fbx)"
+    )
+    
     args = parser.parse_args()
     
     cli = AssetPipelineCLI()
@@ -205,6 +318,8 @@ Examples:
     elif args.convert is not None:
         folders = args.convert if args.convert else None
         cli.run_conversion(folders, args.verbose)
+    elif args.combine_animations:
+        cli.combine_animations(args.base_character, args.verbose)
     else:
         parser.print_help()
 
