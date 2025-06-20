@@ -1,6 +1,13 @@
 # Blender Asset Pipeline .gitignore
+
+# Keep these directories since the scripts look for them
 fxb/*
 !fxb/.gitkeep
+fbxAnimation/*
+!fbxAnimation/.gitkeep
+glb/*
+
+
 
 # ===========================================
 # Blender Files
